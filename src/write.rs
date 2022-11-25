@@ -1,4 +1,4 @@
-use color_eyre::eyre::{Result, WrapErr};
+use color_eyre::{eyre::WrapErr, owo_colors::OwoColorize, Result};
 use edit::{edit_file, Builder};
 use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -61,11 +61,14 @@ pub fn write(garden_path: PathBuf, title: Option<String>) -> Result<()> {
 }
 
 fn ask_for_filename() -> Result<String> {
-    rprompt::prompt_reply_stderr(
+    rprompt::prompt_reply_stderr(&format!(
+        "{}",
         "\
 Enter filename
->",
-    )
+>"
+        .bold()
+        .blue(),
+    ))
     .wrap_err("Failed to get filename")
     .map(|title| slug::slugify(title))
 }
@@ -76,8 +79,9 @@ fn confirm_filename(raw_title: &str) -> Result<String> {
         // this is a convention, bot a requirement enforced by the code
         let result = rprompt::prompt_reply_stderr(&format!(
             "\
-current title: `{}`
+{} {}
 Do you want a different title? (y/N):",
+            "current title:".green().bold(),
             raw_title,
         ))
         .wrap_err("Failed to get input for y/n question")?;
