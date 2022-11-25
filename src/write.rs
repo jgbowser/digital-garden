@@ -1,14 +1,12 @@
 use color_eyre::eyre::{Result, WrapErr};
 use edit::{edit_file, Builder};
-use std::io::{Read, Write, SeekFrom, Seek};
+use std::fs;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 const TEMPLATE: &[u8; 2] = b"# ";
 
-pub fn write(
-    garden_path: PathBuf, 
-    title: Option<String>
-) -> Result<()> {
+pub fn write(garden_path: PathBuf, title: Option<String>) -> Result<()> {
     let (mut file, filepath) = Builder::new()
         .suffix(".md")
         .rand_bytes(5)
@@ -19,7 +17,7 @@ pub fn write(
     file.write_all(TEMPLATE)?;
     // let the user write whatever they want in their favorite editor
     // before returning to the cli and finishing up
-    edit_file(filepath)?;
+    edit_file(&filepath)?;
     // Read the user's changes back from th file into a string
     let mut contents = String::new();
     file.seek(SeekFrom::Start(0))?;
@@ -33,18 +31,33 @@ pub fn write(
             .find(|v| v.starts_with("# "))
             // markdown headings are required to have "# " with
             // at least one space
-            .map(|maybe_line| {
-                maybe_line
-                    .trim_start_matches("# ")
-                    .to_string()
-            })
+            .map(|maybe_line| maybe_line.trim_start_matches("# ").to_string())
     });
     let filename = match document_title {
         Some(raw_title) => confirm_filename(&raw_title),
-        None => ask_for_filename()
-    };
-    dbg!(contents, filename);
-    todo!()
+        None => ask_for_filename(),
+    }?;
+    let mut i: usize = 0;
+    loop {
+        let dest_filename = format!(
+            "{}{}",
+            filename,
+            if i == 0 {
+                "".to_string()
+            } else {
+                i.to_string()
+            }
+        );
+        let mut dest = garden_path.join(dest_filename);
+        dest.set_extension("md");
+        if dest.exists() {
+            i = i + 1;
+        } else {
+            fs::rename(filepath, &dest)?;
+            break;
+        }
+    }
+    Ok(())
 }
 
 fn ask_for_filename() -> Result<String> {
@@ -61,14 +74,12 @@ fn confirm_filename(raw_title: &str) -> Result<String> {
     loop {
         //prompt defaults to uppercase character in question
         // this is a convention, bot a requirement enforced by the code
-        let result = rprompt::prompt_reply_stderr(
-            &format!(
-                "\
+        let result = rprompt::prompt_reply_stderr(&format!(
+            "\
 current title: `{}`
 Do you want a different title? (y/N):",
-                raw_title,
-            ),
-        )
+            raw_title,
+        ))
         .wrap_err("Failed to get input for y/n question")?;
 
         match result.as_str() {
