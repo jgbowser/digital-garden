@@ -19,6 +19,7 @@ fn test_write_help() -> Result<()> {
 }
 
 #[test]
+#[ignore]
 fn test_write() {
     let mut cmd = Command::cargo_bin("garden").unwrap();
     let assert = cmd.arg("write").assert();
