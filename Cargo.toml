@@ -17,9 +17,11 @@ path = "src/lib.rs"
 color-eyre = "0.6.2"
 directories = "4.0.1"
 edit = "0.1.4"
+predicates = "2.1.3"
 rprompt = "1.0.5"
 slug = "0.1.4"
 structopt = "0.3.21"
 
 [dev-dependencies]
 assert_cmd = "1.0.2"
+assert_fs = "1.0.9"
